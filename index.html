@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translator Hub</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --bg: #f4f7f6;
+            --text: #333;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 900px; }
+        h1 { margin-top: 0; color: #111; }
+        
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+        .tab { padding: 10px 25px; cursor: pointer; border-bottom: 3px solid transparent; font-weight: bold; color: #777; }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        /* Layout */
+        .translator-grid { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 15px; align-items: center; }
+        textarea { width: 100%; height: 250px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; resize: none; box-sizing: border-box; }
+        .swap-col { text-align: center; }
+        .btn-swap { background: #eee; border: 1px solid #ccc; padding: 10px; border-radius: 50%; cursor: pointer; font-size: 20px; transition: 0.2s; }
+        .btn-swap:hover { background: #ddd; }
+
+        .label { font-weight: bold; margin-bottom: 8px; display: block; font-size: 0.9rem; color: #555; }
+        .info { margin-top: 20px; font-size: 0.85rem; color: #666; background: #eef; padding: 10px; border-radius: 5px; }
+        
+        @media (max-width: 600px) {
+            .translator-grid { grid-template-columns: 1fr; }
+            .swap-col { transform: rotate(90deg); margin: 10px 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Translator Hub</h1>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('eis')">eis</div>
+        <div class="tab" onclick="switchTab('buwgeh')">buwgeh</div>
+    </div>
+
+    <div id="subtitle" style="margin-bottom: 20px; color: #555; font-style: italic;">
+        sh→s, ch→ts, j/soft-g→dz, what→eis
+    </div>
+
+    <div class="translator-grid">
+        <div>
+            <span class="label" id="label-left">English</span>
+            <textarea id="input-text" placeholder="Type here..." oninput="doTranslate()"></textarea>
+        </div>
+        
+        <div class="swap-col">
+            <button class="btn-swap" onclick="swapDirection()">⇄</button>
+        </div>
+        
+        <div>
+            <span class="label" id="label-right">Eis</span>
+            <textarea id="output-text" placeholder="Translation..." readonly></textarea>
+        </div>
+    </div>
+
+    <div class="info" id="info-box">
+        Special Rules: 'what' becomes 'eis' | Soft-G/J becomes 'dz' | CH becomes 'ts' | SH becomes 's'
+    </div>
+</div>
+
+<script>
+    let currentTab = 'eis';
+    let isEngToTarget = true;
+
+    function switchTab(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Update Labels and info
+        if (tab === 'eis') {
+            document.getElementById('subtitle').innerText = "sh→s, ch→ts, j/soft-g→dz, what→eis";
+            document.getElementById('info-box').innerText = "Special Rules: 'what' becomes 'eis' | Soft-G/J becomes 'dz' | CH becomes 'ts' | SH becomes 's'";
+        } else {
+            document.getElementById('subtitle').innerText = "r→w, end-r→h (Example: River → Wiveh)";
+            document.getElementById('info-box').innerText = "Special Rules: 'r' at the end of a word becomes 'h' | All other 'r's become 'w'";
+        }
+        
+        updateLabels();
+        doTranslate();
+    }
+
+    function swapDirection() {
+        isEngToTarget = !isEngToTarget;
+        // Swap content
+        const input = document.getElementById('input-text');
+        const output = document.getElementById('output-text');
+        const temp = input.value;
+        input.value = output.value;
+        output.value = temp;
+        
+        updateLabels();
+        doTranslate();
+    }
+
+    function updateLabels() {
+        const targetName = currentTab === 'eis' ? 'Eis' : 'Buwgeh';
+        document.getElementById('label-left').innerText = isEngToTarget ? 'English' : targetName;
+        document.getElementById('label-right').innerText = isEngToTarget ? targetName : 'English';
+    }
+
+    // --- TRANSLATION ENGINES ---
+
+    function engToEis(text) {
+        let t = text;
+        t = t.replace(/\bwhat\b/gi, (m) => m[0] === 'W' ? 'Eis' : 'eis');
+        t = t.replace(/g(?=[eiy])/g, 'dz').replace(/G(?=[eiy])/gi, 'Dz');
+        t = t.replace(/j/g, 'dz').replace(/J/g, 'Dz');
+        t = t.replace(/ch/g, 'ts').replace(/Ch/g, 'Ts').replace(/CH/g, 'TS');
+        t = t.replace(/ti(?=[oa]n|al)/gi, (m) => m[0] === 'T' ? 'Si' : 'si');
+        t = t.replace(/sh/g, 's').replace(/Sh/g, 'S').replace(/SH/g, 'S');
+        return t;
+    }
+
+    function eisToEng(text) {
+        let t = text;
+        t = t.replace(/\beis\b/gi, 'what');
+        t = t.replace(/dz/g, 'j').replace(/Dz/g, 'J');
+        t = t.replace(/ts/g, 'ch').replace(/Ts/g, 'Ch');
+        return t;
+    }
+
+    function engToBuwgeh(text) {
+        let t = text;
+        t = t.replace(/r\b/g, 'h').replace(/R\b/g, 'H');
+        t = t.replace(/r/g, 'w').replace(/R/g, 'W');
+        return t;
+    }
+
+    function buwgehToEng(text) {
+        return text.replace(/w/g, 'r').replace(/W/g, 'R');
+    }
+
+    function doTranslate() {
+        const input = document.getElementById('input-text').value;
+        let result = "";
+
+        if (currentTab === 'eis') {
+            result = isEngToTarget ? engToEis(input) : eisToEng(input);
+        } else {
+            result = isEngToTarget ? engToBuwgeh(input) : buwgehToEng(input);
+        }
+
+        document.getElementById('output-text').value = result;
+    }
+</script>
+
+</body>
+</html>
