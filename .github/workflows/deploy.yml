@@ -30,6 +30,11 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Copy static files
+        run: |
+          cp -r .next/static .next/standalone/.next/ || true
+          cp -r public .next/standalone/ || true
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
